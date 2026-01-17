@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe, Volume2 } from "lucide-react";
+import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe, Volume2, FileText } from "lucide-react";
 
 // --- DICTIONNAIRE ---
 const translations = {
@@ -13,7 +13,8 @@ const translations = {
     clickToSpeak: "Click to speak",
     finished: "Analysis complete.",
     scoreTitle: "Sentiment Score",
-    summaryTitle: "AI Summary",
+    voiceTitle: "AI Voice Response",
+    summaryTitle: "Executive Summary",
     categoryTitle: "Category",
     actionTitle: "Recommended Action",
     sentMessage: "Data synced with SurveyMonkey (Webhook)",
@@ -21,7 +22,7 @@ const translations = {
     promptUser: (text: string) => `Analyze this feedback: "${text}".
       Return a JSON object in ENGLISH:
       {
-        "summary": "Short summary",
+        "summary": "One concise sentence summarizing the feedback",
         "sentiment": "Positive" or "Neutral" or "Negative",
         "score": number (1-10),
         "category": "Service" or "Product" or "Pricing",
@@ -37,7 +38,8 @@ const translations = {
     clickToSpeak: "Cliquez pour parler",
     finished: "Analyse terminée.",
     scoreTitle: "Score Sentiment",
-    summaryTitle: "Résumé IA",
+    voiceTitle: "Réponse Vocale IA",
+    summaryTitle: "Résumé Exécutif",
     categoryTitle: "Catégorie",
     actionTitle: "Action Recommandée",
     sentMessage: "Données synchronisées avec SurveyMonkey (Webhook)",
@@ -45,7 +47,7 @@ const translations = {
     promptUser: (text: string) => `Analyse ce feedback : "${text}".
       Retourne un JSON en FRANÇAIS :
       {
-        "summary": "Résumé court",
+        "summary": "Une phrase concise résumant le feedback",
         "sentiment": "Positif" ou "Neutre" ou "Négatif",
         "score": chiffre (1-10),
         "category": "Service" ou "Produit" ou "Prix",
@@ -85,13 +87,11 @@ export default function Home() {
     if (recognitionRef.current) recognitionRef.current.lang = lang === "en" ? "en-US" : "fr-FR";
   }, [lang]);
 
-  // --- FONCTION QUI FAIT PARLER L'IA ---
   const speakResponse = (text: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang === "en" ? "en-US" : "fr-FR";
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      utterance.rate = 1.0; // Vitesse normale
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -104,7 +104,6 @@ export default function Home() {
     } else {
       setTranscript("");
       setAnalysis(null);
-      // On coupe la parole à l'IA si elle parlait encore
       window.speechSynthesis.cancel(); 
       recognitionRef.current?.start();
       setIsListening(true);
@@ -155,7 +154,6 @@ export default function Home() {
         
         setAnalysis(jsonResult);
 
-        // 🔥 LE MOMENT WOW : L'IA PARLE 🔥
         if (jsonResult.voice_response) {
             speakResponse(jsonResult.voice_response);
         }
@@ -242,6 +240,7 @@ export default function Home() {
       {analysis && !loading && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl w-full animate-in fade-in slide-in-from-bottom-10 duration-700">
           
+          {/* 1. SCORE */}
           <div className={`bg-slate-800 p-6 rounded-xl border-l-4 shadow-xl ${status.border} flex flex-col justify-between`}>
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className={status.color} />
@@ -255,14 +254,25 @@ export default function Home() {
             </div>
           </div>
 
+          {/* 2. RÉPONSE VOCALE (JARVIS) */}
           <div className="bg-slate-800 p-6 rounded-xl border-l-4 border-gray-500 shadow-xl">
              <div className="flex items-center gap-2 mb-2">
                 <Volume2 className="text-blue-400" size={20} />
-                <h3 className="text-gray-400 uppercase text-sm font-bold">AI Response</h3>
+                <h3 className="text-gray-400 uppercase text-sm font-bold">{t.voiceTitle}</h3>
              </div>
              <p className="text-lg text-white italic">"{analysis.voice_response}"</p>
           </div>
 
+          {/* 3. RÉSUMÉ EXÉCUTIF (NEW !) */}
+          <div className="bg-slate-800 p-6 rounded-xl border-l-4 border-blue-500 shadow-xl md:col-span-2">
+             <div className="flex items-center gap-2 mb-2">
+                <FileText className="text-blue-300" size={20} />
+                <h3 className="text-gray-400 uppercase text-sm font-bold">{t.summaryTitle}</h3>
+             </div>
+             <p className="text-lg text-white">{analysis.summary}</p>
+          </div>
+
+          {/* 4. CATÉGORIE & ACTION */}
           <div className="bg-slate-800 p-6 rounded-xl border-l-4 border-purple-500 shadow-xl md:col-span-2">
             <div className="flex justify-between items-start">
               <div>
