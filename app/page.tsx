@@ -1,60 +1,61 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe } from "lucide-react";
+import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe, Volume2 } from "lucide-react";
 
-// --- DICTIONNAIRE DE TRADUCTION ---
+// --- DICTIONNAIRE ---
 const translations = {
   en: {
     title: "VibeCheck",
-    subtitle: "The Future of Feedback (Powered by Groq)",
+    subtitle: "Conversational Feedback AI",
     listening: "Listening...",
-    analyzing: "AI is thinking...",
+    analyzing: "AI is analyzing & formulating a response...",
     clickToSpeak: "Click to speak",
     finished: "Analysis complete.",
     scoreTitle: "Sentiment Score",
     summaryTitle: "AI Summary",
-    categoryTitle: "Category Detected",
+    categoryTitle: "Category",
     actionTitle: "Recommended Action",
-    sentMessage: "Data successfully sent to SurveyMonkey API (via Webhook)",
-    promptSystem: "You are an API expert. Reply ONLY in valid JSON. No text before or after.",
+    sentMessage: "Data synced with SurveyMonkey (Webhook)",
+    promptSystem: "You are an empathy engine. Reply ONLY in JSON.",
     promptUser: (text: string) => `Analyze this feedback: "${text}".
-      Return a JSON object with the content strictly in ENGLISH:
+      Return a JSON object in ENGLISH:
       {
         "summary": "Short summary",
         "sentiment": "Positive" or "Neutral" or "Negative",
         "score": number (1-10),
-        "category": "Service" or "Product" or "Pricing" or "Other",
-        "action_item": "Recommended action"
+        "category": "Service" or "Product" or "Pricing",
+        "action_item": "Recommended action",
+        "voice_response": "A short, empathetic, direct sentence (max 15 words) to say back to the user."
       }`
   },
   fr: {
     title: "VibeCheck",
-    subtitle: "Le futur du feedback (Propulsé par Groq)",
+    subtitle: "IA de Feedback Conversationnelle",
     listening: "Je vous écoute...",
-    analyzing: "L'IA réfléchit...",
+    analyzing: "L'IA analyse et prépare une réponse...",
     clickToSpeak: "Cliquez pour parler",
     finished: "Analyse terminée.",
-    scoreTitle: "Score de Sentiment",
+    scoreTitle: "Score Sentiment",
     summaryTitle: "Résumé IA",
-    categoryTitle: "Catégorie Détectée",
+    categoryTitle: "Catégorie",
     actionTitle: "Action Recommandée",
-    sentMessage: "Données envoyées avec succès à SurveyMonkey (via Webhook)",
-    promptSystem: "Tu es un expert API. Réponds UNIQUEMENT en JSON valide. Pas de texte avant ni après.",
+    sentMessage: "Données synchronisées avec SurveyMonkey (Webhook)",
+    promptSystem: "Tu es un moteur d'empathie. Réponds UNIQUEMENT en JSON.",
     promptUser: (text: string) => `Analyse ce feedback : "${text}".
-      Retourne un objet JSON avec le contenu strictement en FRANÇAIS :
+      Retourne un JSON en FRANÇAIS :
       {
         "summary": "Résumé court",
         "sentiment": "Positif" ou "Neutre" ou "Négatif",
         "score": chiffre (1-10),
-        "category": "Service" ou "Produit" ou "Prix" ou "Autre",
-        "action_item": "Action recommandée"
+        "category": "Service" ou "Produit" ou "Prix",
+        "action_item": "Action recommandée",
+        "voice_response": "Une phrase courte, empathique et directe (max 15 mots) à dire oralement à l'utilisateur."
       }`
   }
 };
 
 export default function Home() {
-  // --- ÉTATS ---
   const [lang, setLang] = useState<"en" | "fr">("en"); 
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -62,7 +63,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  // --- RECONNAISSANCE VOCALE ---
   useEffect(() => {
     if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
       // @ts-ignore
@@ -70,7 +70,6 @@ export default function Home() {
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = lang === "en" ? "en-US" : "fr-FR";
-
       recognition.onresult = (event: any) => {
         let finalTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -78,17 +77,24 @@ export default function Home() {
         }
         setTranscript(finalTranscript);
       };
-
       recognitionRef.current = recognition;
     }
   }, []);
 
-  // Changement de langue dynamique
   useEffect(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.lang = lang === "en" ? "en-US" : "fr-FR";
-    }
+    if (recognitionRef.current) recognitionRef.current.lang = lang === "en" ? "en-US" : "fr-FR";
   }, [lang]);
+
+  // --- FONCTION QUI FAIT PARLER L'IA ---
+  const speakResponse = (text: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang === "en" ? "en-US" : "fr-FR";
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const toggleListening = () => {
     if (isListening) {
@@ -98,6 +104,8 @@ export default function Home() {
     } else {
       setTranscript("");
       setAnalysis(null);
+      // On coupe la parole à l'IA si elle parlait encore
+      window.speechSynthesis.cancel(); 
       recognitionRef.current?.start();
       setIsListening(true);
     }
@@ -109,7 +117,6 @@ export default function Home() {
     setTranscript("");
   };
 
-  // --- IA GROQ + BACKEND WEBHOOK ---
   const analyzeFeedback = async (text: string) => {
     if (!text) return;
     setLoading(true);
@@ -118,7 +125,6 @@ export default function Home() {
       const API_KEY = ""; 
       const t = translations[lang];
 
-      // 1. Appel à l'IA
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -140,7 +146,6 @@ export default function Home() {
       let content = data.choices[0].message.content;
       console.log("RÉPONSE IA:", content);
 
-      // Extraction propre du JSON
       const firstBrace = content.indexOf('{');
       const lastBrace = content.lastIndexOf('}');
       
@@ -150,14 +155,17 @@ export default function Home() {
         
         setAnalysis(jsonResult);
 
-        // 2. ENVOI AU BACKEND (Simulé via Webhook)
-        // C'est ici qu'on prouve que les données sortent de l'app
+        // 🔥 LE MOMENT WOW : L'IA PARLE 🔥
+        if (jsonResult.voice_response) {
+            speakResponse(jsonResult.voice_response);
+        }
+
         fetch("https://webhook.site/f5fb9dc2-e0b3-44eb-9b93-7e5fa36a4c26", {
             method: "POST",
-            mode: 'no-cors', // Pour éviter les erreurs CORS dans le navigateur
+            mode: 'no-cors',
             headers: { "Content-Type": "application/json" },
             body: jsonString
-        }).then(() => console.log("Données envoyées au webhook !"));
+        });
 
       } else {
         throw new Error("No JSON found");
@@ -171,27 +179,20 @@ export default function Home() {
     }
   };
 
-  // --- LOGIQUE DES COULEURS ---
   const getColorStatus = (sentiment: string) => {
     if (!sentiment) return { color: "text-gray-400", border: "border-gray-500" };
     const s = sentiment.toLowerCase();
-    
-    // Vert pour Positif
     if (s.includes("positi")) return { color: "text-green-400", border: "border-green-500" };
-    // Rouge pour Négatif
     if (s.includes("négati") || s.includes("negati")) return { color: "text-red-500", border: "border-red-500" };
-    // Bleu pour Neutre
     return { color: "text-blue-400", border: "border-blue-500" }; 
   };
 
   const t = translations[lang];
   const status = analysis ? getColorStatus(analysis.sentiment) : { color: "", border: "" };
 
-  // --- RENDU ---
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-6 relative">
       
-      {/* BOUTON LANGUE */}
       <button 
         onClick={toggleLang}
         className="absolute top-6 right-6 flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/20 transition-all font-bold z-50"
@@ -204,7 +205,7 @@ export default function Home() {
         <h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500 mb-2">
           {t.title}
         </h1>
-        <p className="text-gray-400">{t.subtitle}</p>
+        <p className="text-gray-400 tracking-widest uppercase text-sm font-semibold">{t.subtitle}</p>
       </div>
 
       <div className="relative group mt-10">
@@ -241,8 +242,7 @@ export default function Home() {
       {analysis && !loading && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl w-full animate-in fade-in slide-in-from-bottom-10 duration-700">
           
-          {/* CARTE SCORE AVEC COULEUR DYNAMIQUE */}
-          <div className={`bg-slate-800 p-6 rounded-xl border-l-4 shadow-xl ${status.border}`}>
+          <div className={`bg-slate-800 p-6 rounded-xl border-l-4 shadow-xl ${status.border} flex flex-col justify-between`}>
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className={status.color} />
               <h3 className="text-gray-400 uppercase text-sm font-bold">{t.scoreTitle}</h3>
@@ -256,8 +256,11 @@ export default function Home() {
           </div>
 
           <div className="bg-slate-800 p-6 rounded-xl border-l-4 border-gray-500 shadow-xl">
-             <h3 className="text-gray-400 uppercase text-sm font-bold mb-2">{t.summaryTitle}</h3>
-             <p className="text-lg text-white">{analysis.summary}</p>
+             <div className="flex items-center gap-2 mb-2">
+                <Volume2 className="text-blue-400" size={20} />
+                <h3 className="text-gray-400 uppercase text-sm font-bold">AI Response</h3>
+             </div>
+             <p className="text-lg text-white italic">"{analysis.voice_response}"</p>
           </div>
 
           <div className="bg-slate-800 p-6 rounded-xl border-l-4 border-purple-500 shadow-xl md:col-span-2">
