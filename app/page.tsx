@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe, Volume2, FileText } from "lucide-react";
+import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe, Volume2, FileText, Bug } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 
 // --- DICTIONNAIRE ---
 const translations = {
@@ -66,6 +67,8 @@ export default function Home() {
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
+    Sentry.setUser({ email: "judge@uottahack.com", id: "judge-001" });
+
     if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
       // @ts-ignore
       const recognition = new window.webkitSpeechRecognition();
@@ -85,13 +88,18 @@ export default function Home() {
 
   useEffect(() => {
     if (recognitionRef.current) recognitionRef.current.lang = lang === "en" ? "en-US" : "fr-FR";
+    Sentry.addBreadcrumb({
+      category: "ui",
+      message: `Language changed to ${lang}`,
+      level: "info",
+    });
   }, [lang]);
 
   const speakResponse = (text: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang === "en" ? "en-US" : "fr-FR";
-      utterance.rate = 1.0; // Vitesse normale
+      utterance.rate = 1.0; 
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -100,6 +108,7 @@ export default function Home() {
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
+      Sentry.addBreadcrumb({ category: "user-action", message: "Stop Listening", level: "info" });
       analyzeFeedback(transcript);
     } else {
       setTranscript("");
@@ -107,6 +116,7 @@ export default function Home() {
       window.speechSynthesis.cancel(); 
       recognitionRef.current?.start();
       setIsListening(true);
+      Sentry.addBreadcrumb({ category: "user-action", message: "Start Listening", level: "info" });
     }
   };
 
@@ -119,6 +129,11 @@ export default function Home() {
   const analyzeFeedback = async (text: string) => {
     if (!text) return;
     setLoading(true);
+
+    Sentry.setContext("AI Context", {
+      user_transcript: text,
+      current_language: lang
+    });
 
     try {
       const API_KEY = ""; 
@@ -171,9 +186,49 @@ export default function Home() {
 
     } catch (error) {
       console.error(error);
+      Sentry.captureException(error);
       alert("Error analysis.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- FONCTION QUI LANCE LA FENÊTRE SENTRY DANS LA BONNE LANGUE ---
+  const triggerSentryError = () => {
+    try {
+      throw new Error("Sentry Test Error: AI Module Failed to Load");
+    } catch (error) {
+      const eventId = Sentry.captureException(error);
+      
+      // Configuration des textes selon la langue
+      const dialogOptions = lang === "en" ? {
+        title: "Oops! VibeCheck Crashed",
+        subtitle: "Our dev team has been notified. Please tell us what happened:",
+        subtitle2: "",
+        labelName: "Name",
+        labelEmail: "Email",
+        labelComments: "What happened?",
+        labelSubmit: "Submit Report",
+        errorGeneric: "An unknown error occurred while submitting your report. Please try again.",
+        errorFormEntry: "Some fields were invalid. Please correct the errors and try again.",
+        successMessage: "Your feedback has been sent. Thank you!"
+      } : {
+        title: "Oups ! VibeCheck a planté",
+        subtitle: "Notre équipe a été notifiée. Dites-nous ce qu'il s'est passé :",
+        subtitle2: "",
+        labelName: "Nom",
+        labelEmail: "Email",
+        labelComments: "Que s'est-il passé ?",
+        labelSubmit: "Envoyer le rapport",
+        errorGeneric: "Une erreur inconnue est survenue.",
+        errorFormEntry: "Veuillez corriger les erreurs.",
+        successMessage: "Votre rapport a été envoyé. Merci !"
+      };
+
+      Sentry.showReportDialog({ 
+        eventId: eventId, 
+        ...dialogOptions 
+      });
     }
   };
 
@@ -263,7 +318,7 @@ export default function Home() {
              <p className="text-lg text-white italic">"{analysis.voice_response}"</p>
           </div>
 
-          {/* 3. RÉSUMÉ EXÉCUTIF (NEW !) */}
+          {/* 3. RÉSUMÉ EXÉCUTIF */}
           <div className="bg-slate-800 p-6 rounded-xl border-l-4 border-blue-500 shadow-xl md:col-span-2">
              <div className="flex items-center gap-2 mb-2">
                 <FileText className="text-blue-300" size={20} />
@@ -294,6 +349,17 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* BOUTON SENTRY FINAL (Rond, discret, stylé) */}
+      <button 
+        onClick={triggerSentryError} 
+        className="fixed bottom-6 left-6 z-[9999] flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-400 border border-white/10 hover:border-red-500/50 rounded-full transition-all duration-300 text-xs font-medium backdrop-blur-md cursor-pointer"
+        title="Trigger Sentry Error"
+      >
+        <Bug size={14} />
+        <span>Debug Mode</span>
+      </button>
+
     </main>
   );
 }
