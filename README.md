@@ -2,7 +2,7 @@
 
 A next-generation feedback platform that replaces boring forms with real-time voice conversation. Powered by Groq (Llama 3), Next.js, and monitored by Sentry.
 
-🌐 [Live Experience](https://ton-lien-vercel-ici.app)
+🌐 [Live Experience](https://vibecheck-aidemo.vercel.app/)
 
 ---
 
