@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VibeCheck - Conversational AI Feedback
 
-## Getting Started
+A next-generation feedback platform that replaces boring forms with real-time voice conversation. Powered by Groq (Llama 3), Next.js, and monitored by Sentry.
 
-First, run the development server:
+🌐 [Live Experience](https://ton-lien-vercel-ici.app)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 💎 The Vision
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**VibeCheck** makes static survey forms obsolete. 
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Instead of forcing customers to click checkboxes, we listen to them. Using advanced Speech-to-Text and Generative AI, we transform raw voice audio into structured business data (Sentiment, Category, Actionable Insights) instantly.
 
-## Learn More
+## 🚀 Technical Excellence
 
-To learn more about Next.js, take a look at the following resources:
+*   **🗣️ Conversational Engine:** Uses browser-native Speech Recognition combined with Groq's Llama 3 model for <500ms latency responses.
+*   **🧠 Context-Aware AI:** The system doesn't just analyze; it *responds* vocally to the user with empathy using Speech Synthesis.
+*   **🛡️ AI Observability:** Integrated with **Sentry** to capture not just code errors, but **User Transcripts** during crashes. This allows for prompt engineering debugging in production.
+*   **🌍 Bilingual Core:** Fully dynamic English/French switching (UI, Voice Recognition, and AI Synthesis).
+*   **🔌 Real-time Webhook:** Instantly dispatches structured JSON payloads to external backends (simulating SurveyMonkey integration).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+*   **Frontend:** Next.js 14 (App Router), React, Tailwind CSS.
+*   **AI Model:** Llama-3.3-70b via Groq API.
+*   **Monitoring:** Sentry (Custom Context & User Feedback Widget).
+*   **Motion:** Lucide React for iconography & CSS Animations.
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*Built by Rayan Saadani Hassani*

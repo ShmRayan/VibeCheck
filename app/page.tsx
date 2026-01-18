@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { Mic, Square, Loader2, CheckCircle, BarChart3, Globe, Volume2, FileText, Bug } from "lucide-react";
 import * as Sentry from "@sentry/nextjs";
 
-// --- DICTIONNAIRE ---
 const translations = {
   en: {
     title: "VibeCheck",
@@ -136,7 +135,7 @@ export default function Home() {
     });
 
     try {
-      const API_KEY = ""; 
+      const API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY;
       const t = translations[lang];
 
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -193,14 +192,11 @@ export default function Home() {
     }
   };
 
-  // --- FONCTION QUI LANCE LA FENÊTRE SENTRY DANS LA BONNE LANGUE ---
   const triggerSentryError = () => {
     try {
       throw new Error("Sentry Test Error: AI Module Failed to Load");
     } catch (error) {
       const eventId = Sentry.captureException(error);
-      
-      // Configuration des textes selon la langue
       const dialogOptions = lang === "en" ? {
         title: "Oops! VibeCheck Crashed",
         subtitle: "Our dev team has been notified. Please tell us what happened:",
@@ -350,7 +346,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* BOUTON SENTRY FINAL (Rond, discret, stylé) */}
+      {/* BOUTON SENTRY FINAL */}
       <button 
         onClick={triggerSentryError} 
         className="fixed bottom-6 left-6 z-[9999] flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-400 border border-white/10 hover:border-red-500/50 rounded-full transition-all duration-300 text-xs font-medium backdrop-blur-md cursor-pointer"
